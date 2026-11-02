@@ -13,6 +13,7 @@ let score = 8;
 let profileName = 'Jordan Lee';
 let loading = true;
 let apiError = '';
+let lastRenderedTab = null;
 
 const app = document.querySelector('#app');
 const poster = (g) => `<img src="${g.art}" alt="${g.title} key art" onerror="this.style.display='none';this.parentElement.classList.add('image-fallback')">`;
@@ -51,6 +52,9 @@ function render() {
   const rated = ratedGames();
   const wantToPlay = games.filter(g => backlog[g.id]).sort((a,b) => backlog[b.id].time - backlog[a.id].time);
   const activeGames = games.filter(g => inProgress[g.id]).sort((a,b) => inProgress[b.id].time - inProgress[a.id].time);
+  const tabChanged = lastRenderedTab !== null && lastRenderedTab !== activeTab;
+  const tabDirection = activeTab === 'shelf' ? 'enter-from-right' : 'enter-from-left';
+  lastRenderedTab = activeTab;
   const average = rated.length ? (rated.reduce((sum, game) => sum + ratings[game.id].score, 0) / rated.length).toFixed(1) : '—';
   app.innerHTML = `<div class="app-shell">
     <aside class="sidebar">
@@ -64,8 +68,10 @@ function render() {
     </aside>
     <main class="main-area">
       <header class="topbar"><div class="breadcrumb">YOUR SPACE <span>/</span> ${activeTab === 'discover' ? 'DISCOVER' : 'MY SHELF'}</div><div class="top-actions"><span class="streak"><i>✳</i> <b>${rated.length}</b> rated</span><button class="help-button" aria-label="Help">?</button></div></header>
-      ${activeTab === 'discover' ? discoverView(g, pool.length, rated, average) : shelfView(rated, average, wantToPlay, activeGames)}
-      <footer class="footer"><span>SIDEQUEST <span class="footer-sep">/</span> YOUR NEXT FAVORITE IS OUT THERE</span><span>MADE FOR THE LOVE OF PLAY <b>✳</b></span></footer>
+      <div class="tab-page ${tabChanged ? `tab-enter ${tabDirection}` : ''}">
+        ${activeTab === 'discover' ? discoverView(g, pool.length, rated, average) : shelfView(rated, average, wantToPlay, activeGames)}
+        <footer class="footer"><span>SIDEQUEST <span class="footer-sep">/</span> YOUR NEXT FAVORITE IS OUT THERE</span><span>MADE FOR THE LOVE OF PLAY <b>✳</b></span></footer>
+      </div>
     </main>
   </div>`;
   bindEvents();

@@ -29,3 +29,5 @@ body{color:var(--ink);background:radial-gradient(ellipse at 58% -22%,#fffdf5 0,t
 @media(max-width:520px){.not-played-button{font-size:8px;padding:11px}.not-played-button i{font-size:7px}.shelf-stats{gap:20px}.shelf-stats b{font-size:23px}}
 .in-progress-action{margin-top:7px;border-style:dashed}.in-progress-action span{color:#737fe4}.in-progress-action:hover{border-color:#737fe4}.shelf-stats{flex-wrap:wrap}
 @media(max-width:520px){.shelf-stats{display:grid;grid-template-columns:repeat(2,max-content);gap:14px 24px}}
+.tab-page{display:flex;flex:1;flex-direction:column;min-width:0}.tab-enter{animation:tab-arrive .34s cubic-bezier(.22,.7,.2,1) both}.tab-enter.enter-from-right{--tab-offset:16px}.tab-enter.enter-from-left{--tab-offset:-16px}@keyframes tab-arrive{from{opacity:0;transform:translateX(var(--tab-offset,0))}to{opacity:1;transform:translateX(0)}}
+@media(prefers-reduced-motion:reduce){.tab-enter{animation:none}}
