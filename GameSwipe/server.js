@@ -41,6 +41,12 @@ db.exec(`
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (profile_id, game_id)
   );
+  CREATE TABLE IF NOT EXISTS backlog (
+    profile_id INTEGER NOT NULL REFERENCES profiles(id),
+    game_id TEXT NOT NULL REFERENCES games(id),
+    added_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (profile_id, game_id)
+  );
   CREATE TABLE IF NOT EXISTS game_events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     profile_id INTEGER NOT NULL REFERENCES profiles(id),
@@ -78,7 +84,9 @@ app.get('/api/state', (_req, res) => {
     art, color, description FROM games ORDER BY rowid`).all().map((game) => ({ ...game, tags: JSON.parse(game.tags) }));
   const ratingRows = db.prepare('SELECT game_id AS gameId, score, created_at AS createdAt, updated_at AS updatedAt FROM ratings WHERE profile_id = 1').all();
   const ratings = Object.fromEntries(ratingRows.map((row) => [row.gameId, { score: row.score, time: Date.parse(`${row.updatedAt.replace(' ', 'T')}Z`) || Date.now() }]));
-  res.json({ profile, games: catalog, ratings, preferences });
+  const backlogRows = db.prepare('SELECT game_id AS gameId, added_at AS addedAt FROM backlog WHERE profile_id = 1').all();
+  const backlog = Object.fromEntries(backlogRows.map((row) => [row.gameId, { time: Date.parse(`${row.addedAt.replace(' ', 'T')}Z`) || Date.now() }]));
+  res.json({ profile, games: catalog, ratings, backlog, preferences });
 });
 
 app.put('/api/ratings/:gameId', (req, res) => {
@@ -88,7 +96,21 @@ app.put('/api/ratings/:gameId', (req, res) => {
   if (!Number.isInteger(score) || score < 1 || score > 10) return res.status(400).json({ error: 'Score must be an integer from 1 to 10' });
   db.prepare(`INSERT INTO ratings (profile_id, game_id, score) VALUES (1, ?, ?)
     ON CONFLICT(profile_id, game_id) DO UPDATE SET score=excluded.score, updated_at=CURRENT_TIMESTAMP`).run(gameId, score);
+  db.prepare('DELETE FROM backlog WHERE profile_id = 1 AND game_id = ?').run(gameId);
   db.prepare(`INSERT INTO game_events (profile_id, game_id, action, score) VALUES (1, ?, 'rate', ?)`).run(gameId, score);
+  res.json({ ok: true });
+});
+
+app.post('/api/backlog/:gameId', (req, res) => {
+  const { gameId } = req.params;
+  if (!db.prepare('SELECT 1 FROM games WHERE id = ?').get(gameId)) return res.status(404).json({ error: 'Game not found' });
+  db.prepare('INSERT OR IGNORE INTO backlog (profile_id, game_id) VALUES (1, ?)').run(gameId);
+  res.json({ ok: true });
+});
+
+app.delete('/api/backlog/:gameId', (req, res) => {
+  const { gameId } = req.params;
+  db.prepare('DELETE FROM backlog WHERE profile_id = 1 AND game_id = ?').run(gameId);
   res.json({ ok: true });
 });
 
